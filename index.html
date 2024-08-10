@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioKey Chatbot</title>
+    <style>
+        body {
+            background-color: #333;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat-container {
+            width: 100%;
+            max-width: 400px;
+            height: 80vh;
+            background-color: #444;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .bot-message {
+            background-color: #555;
+            color: #fff;
+            align-self: flex-start;
+        }
+        .user-message {
+            background-color: #e74c3c;
+            color: #fff;
+            align-self: flex-end;
+        }
+        #input-container {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #333;
+        }
+        #user-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
+            margin-right: 10px;
+            font-size: 16px;
+            background-color: #555;
+            color: #fff;
+        }
+        #send-btn {
+            background-color: #e74c3c;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 16px;
+        }
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .option-btn {
+            background-color: #555;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-box">
+        <div class="message bot-message">Seja bem-vindo à RadioKey. Informe seu nome para iniciar o atendimento.</div>
+    </div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="Digite sua mensagem">
+        <button id="send-btn">Enviar</button>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    sendBtn.addEventListener('click', handleUserInput);
+    userInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleUserInput();
+        }
+    });
+
+    function handleUserInput() {
+        const input = userInput.value.trim();
+        if (input) {
+            addMessage(input, 'user-message');
+            userInput.value = '';
+            setTimeout(() => {
+                if (chatBox.childElementCount === 2) {
+                    welcomeUser(input);
+                } else {
+                    processUserResponse(input);
+                }
+            }, 500);
+        }
+    }
+
+    function addMessage(text, className) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', className);
+        messageDiv.innerText = text;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function welcomeUser(name) {
+        addMessage(`Olá ${name}, como posso te ajudar?`, 'bot-message');
+        setTimeout(() => {
+            addMessage('Você deseja adquirir o código de desbloqueio para rádio ou multimídia do seu veículo?', 'bot-message');
+            showOptions([
+                { text: 'SIM', action: handleVehicleSelection },
+                { text: 'NÃO', action: redirectToHumanSupport }
+            ]);
+        }, 1000);
+    }
+
+    function processUserResponse(response) {
+        if (response.toLowerCase() === 'sim') {
+            handleVehicleSelection();
+        } else if (response.toLowerCase() === 'não') {
+            redirectToHumanSupport();
+        } else if (response.startsWith('VWZ') && response.length === 14) {
+            handleVWCode(response);
+        } else {
+            addMessage('Desculpe, não entendi sua resposta.', 'bot-message');
+            setTimeout(showErrorOptions, 1000);
+        }
+    }
+
+    function showOptions(options) {
+        const optionsContainer = document.createElement('div');
+        optionsContainer.classList.add('options-container');
+
+        options.forEach(option => {
+            const button = document.createElement('button');
+            button.classList.add('option-btn');
+            button.innerText = option.text;
+            button.addEventListener('click', () => {
+                addMessage(option.text, 'user-message');
+                optionsContainer.remove();
+                setTimeout(option.action, 500);
+            });
+            optionsContainer.appendChild(button);
+        });
+
+        chatBox.appendChild(optionsContainer);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showErrorOptions() {
+        showOptions([
+            { text: 'REINICIAR ATENDIMENTO', action: restartChat },
+            { text: 'CHAMAR NO WHATSAPP', action: () => window.location.href = 'https://wa.me/5531982626721' }
+        ]);
+    }
+
+    function restartChat() {
+        chatBox.innerHTML = '<div class="message bot-message">Seja bem-vindo à RadioKey. Informe seu nome para iniciar o atendimento.</div>';
+        userInput.placeholder = 'Digite sua mensagem';
+    }
+
+    function redirectToHumanSupport() {
+        addMessage('Nesse caso vou te encaminhar para o atendimento humano.', 'bot-message');
+        setTimeout(() => {
+            showRedirectButton('PROSSEGUIR', 'https://wa.me/5531982626721');
+        }, 1000);
+    }
+
+    function handleVehicleSelection() {
+        addMessage('Escolha para qual veículo deseja realizar o atendimento:', 'bot-message');
+        showOptions([
+            { text: 'VOLKSWAGEN', action: handleVWSelection },
+            { text: 'AUDI', action: handleOtherVehicles },
+            { text: 'FORD', action: handleOtherVehicles },
+            { text: 'FIAT', action: handleOtherVehicles },
+            { text: 'CHEVROLET', action: handleOtherVehicles },
+            { text: 'RENAULT', action: handleOtherVehicles },
+            { text: 'PEUGEOT', action: handleOtherVehicles },
+            { text: 'CITROËN', action: handleOtherVehicles },
+            { text: 'GM CHEVROLET', action: handleOtherVehicles },
+            { text: 'JEEP', action: handleOtherVehicles },
+            { text: 'HONDA', action: handleOtherVehicles },
+            { text: 'OUTRA MARCA', action: handleOtherVehicles }
+        ]);
+    }
+
+    function handleVWSelection() {
+        addMessage('Por favor, digite o número de série do rádio ou multimídia que está na etiqueta do aparelho. Este número de série deve ser iniciado por VWZ e contém 14 dígitos.', 'bot-message');
+        userInput.placeholder = 'Digite o número de série (ex: VWZ123456789012)';
+    }
+
+    function handleVWCode(serialNumber) {
+        addMessage(`O código para seu aparelho está disponível. Seu pedido ficou em R$ 50,00. Deseja prosseguir para o pagamento?`, 'bot-message');
+        setTimeout(() => {
+            showRedirectButton('CONCLUIR COMPRA', `https://wa.me/5531982626721?text=Quero%20efetuar%20o%20pagamento%20de%20R$%2050,00%20reais,%20referente%20ao%20código%20VW,%20para%20o%20número%20de%20série:%20${serialNumber}`);
+        }, 1000);
+    }
+
+    function handleOtherVehicles() {
+        addMessage('Vou te direcionar para o atendimento personalizado no WhatsApp.', 'bot-message');
+        setTimeout(() => {
+            showRedirectButton('CONTINUAR POR WHATSAPP', 'https://wa.me/5531982626721');
+        }, 1000);
+    }
+
+    function showRedirectButton(text, url) {
+        const button = document.createElement('button');
+        button.classList.add('option-btn');
+        button.innerText = text;
+        button.addEventListener('click', function () {
+            window.location.href = url;
+        });
+        chatBox.appendChild(button);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html
